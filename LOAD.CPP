@@ -86,7 +86,11 @@ static u32 memtop() {
     // Kernel can have trouble with initrd at very high addr:
     // limit mem top to 256m
     if(v > 0x10000000ul) return 0x10000000ul;
-    return v;
+
+    // Round down to page boundary.
+    // Or else initrd's tail may end up in last, partial page.
+    // Kernel will refuse to use such initrd.
+    return v & (~PAGE_MASK);
 }
 
 /***************
