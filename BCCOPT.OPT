@@ -1,0 +1,14 @@
+-mt
+-3
+-d
+-g20
+-j5
+-DNDEBUG
+-O
+-Ob
+-Oe
+-Ol
+-Op
+-Os
+-k-
+-Z

@@ -1,0 +1,19 @@
+Acknowledgements
+----------------
+Lots of code was borrowed from loadlin source
+(author of loadlin is Hans Lermen <lermen@elserv.ffm.fgan.de>).
+Some code from linux kernel (setup.S) was used too.
+Thank you guys!
+
+Todo
+----
+?
+
+Changelog
+---------
+0.91    Added support for cl=@filename
+0.92    VCPI vodoo magic: booting under EMM386 and foes :-)
+0.93    Cleanup. cl=@filename: cr/lf will be converted to two spaces
+0.94    Ugly workaround for DOS int 15 fn 88 breakage
+0.95    Bug squashed: vga=NNN did not like dec numbers, oct/hex only
+	Some VCPI comments added
