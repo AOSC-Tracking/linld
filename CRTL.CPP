@@ -22,9 +22,11 @@ int strncmp(const char* a,const char* b,int sz) {
     return 0;
 }
 
+static char crlf[] = { '\r', '\n' };
+
 void puts(const char* s) {
     write(1,s,strlen(s));
-    write(1,"\r\n",2);
+    write(1,crlf,2);
 }
 
 char* heap_top = &bss_end;
@@ -66,7 +68,6 @@ char* malloc_or_die(unsigned size, const char* msg) {
 }
 
 int _argc;
-//const char* _argv[20];
 const char** _argv;
 
 void parse_cmdline() {
@@ -74,11 +75,11 @@ void parse_cmdline() {
     if(cnt>0x7e) cnt=0x7e;
     char* p = (char*)0x81;
     p[cnt]='\0';
-    while( (*p = tolower(*p))!=0 ) p++;
-    p = (char*)0x81;
+    //If you want to lowercase entire command line:
+    //while( (*p = tolower(*p))!=0 ) p++;
+    //p = (char*)0x81;
 
     _argc=1;
-//    _argv[0]=0; //
     _argv = (const char**)malloc_or_die(64*sizeof(_argv[0]));
     _argv[0]=0;
     while(1) {
