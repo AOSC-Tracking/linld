@@ -9,12 +9,12 @@
 const unsigned MIN_STACK = 0x400;
 const unsigned MAX_MALLOC = 0xF000;
 
-const O_RDONLY = 0;     // for open()
-const O_BINARY = 0;
+const int O_RDONLY = 0;     // for open()
+const int O_BINARY = 0;
 
-const SEEK_SET = 0;     // for lseek()
-const SEEK_CUR = 1;
-const SEEK_END = 2;
+const int SEEK_SET = 0;     // for lseek()
+const int SEEK_CUR = 1;
+const int SEEK_END = 2;
 
 extern char text_start; extern char text_end;
 extern char data_start; extern char data_end;
@@ -64,8 +64,8 @@ inline char tolower(char c) {
 #define barrier() do {} while(0)
 #define cli() do { asm { cli } } while(0)
 #define sti() do { asm { sti } } while(0)
-#define int3() do { asm { db 0cch } } while(0)
-#define nop() do { asm { db 90h } } while(0)
+#define int3() do { asm { db 0xcc } } while(0)
+#define nop() do { asm { db 0x90 } } while(0)
 extern char may_exit;
 int die(const char* msg=0);
 char* malloc_or_die(unsigned size, const char* msg=0);

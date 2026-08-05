@@ -1,26 +1,19 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
-        segment _TEXT byte public use16 'CODE'
-        global  _text_end:byte
-        label   _text_end byte
-        ends    _TEXT
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
+        global  byte
+        _text_end:
 
-        segment _DATA byte public use16 'DATA'
-        global  _data_end:byte
-        label   _data_end byte
-        ends    _DATA
+        SEGMENT	_DATA	ALIGN=1	public	use16	CLASS=DATA
+        global  byte
+        _data_end:
 
-        segment _BSS byte public use16 'BSS'
-        global  _bss_end:byte
-        label   _bss_end byte
-        ends    _BSS
+        SEGMENT	_BSS	ALIGN=1	public	use16	CLASS=BSS
+        global  byte
+        _bss_end:
 
         end
 

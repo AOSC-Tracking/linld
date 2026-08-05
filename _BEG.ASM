@@ -1,36 +1,29 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
-        group   DGROUP  _TEXT,_DATA,_BSS
-        assume  cs:DGROUP,ds:DGROUP
+        group   DGROUP  _TEXT _DATA _BSS
 
-        segment _TEXT byte public use16 'CODE'
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
-                org     100h
-        global  _text_start:byte
-        label   _text_start byte
-                extrn   _main:near
-                call    _main
+                RESB     100h
+        global  byte
+        ..start:
+        _text_start:
+                EXTERN   _main
+                call    NEAR _main
                 mov     ah,4ch
                 int     21h
-        ends    _TEXT
 
-        segment _DATA byte public use16 'DATA'
-        global  _data_start:byte
-        label   _data_start byte
-        ends    _DATA
+        SEGMENT	_DATA	ALIGN=1	public	use16	CLASS=DATA
+        global  byte
+        _data_start:
 
-        segment _BSS byte public use16 'BSS'
-        global  _bss_start:byte
-        label   _bss_start byte
-        ends    _BSS
+        SEGMENT	_BSS	ALIGN=1	public	use16	CLASS=BSS
+        global  byte
+        _bss_start:
 
-        end     _text_start
+        end
 
 ;###### END OF FILE ############################################

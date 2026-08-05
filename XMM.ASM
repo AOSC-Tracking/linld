@@ -1,51 +1,47 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
         group   DGROUP  _TEXT
-        assume  cs:DGROUP,ds:DGROUP
 
-        segment _TEXT byte public use16 'CODE'
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
 ;***************************************************************
 ;Get xmm driver addr or 0 if no xmm
 ;u32 get_xmm_driver()
 ;***************************************************************
-        global  _get_xmm_driver:near
-        proc    _get_xmm_driver near
+        global  near
+        _get_xmm_driver:
 
-                push    es bx
+                push	es
+                push	bx
 
                 mov     ax,4300h
                 int     2fh
                 cmp     al,80h
-                jne     @@err
+                jne     @@_get_xmm_driver_err
                 mov     ax,4310h
                 int     2fh
                 mov     dx,es
                 mov     ax,bx
-                jmp     @@ret
-@@err:
+                jmp     @@_get_xmm_driver_ret
+@@_get_xmm_driver_err:
                 xor     dx,dx
                 xor     ax,ax
-@@ret:
-                pop     bx es
-                ret
-        endp    _get_xmm_driver
+@@_get_xmm_driver_ret:
+                pop	bx
+                pop	es
+                retn
 
 
 ;***************************************************************
 ;u32 xmm_alloc(void* drv, u32 size)
 ;***************************************************************
-        global  _xmm_alloc:near
-        proc    _xmm_alloc near
-                arg     drv     :dword, \
-                        sz      :dword  = PARAM_SIZE
+        global  near
+        _xmm_alloc:
+                %arg    drv:dword, \
+                        sz:dword = PARAM_SIZE
 
                 push    bp
                 mov     bp,sp
@@ -59,25 +55,23 @@
                 mov     ah,09h          ;allocate blk
                 call    [drv]           ;
                 test    ax,ax
-                jz      @@err
+                jz      @@_xmm_alloc_err
                                         ;now: dx=handle of the blk
                 mov     ah,0Ch          ;lock blk
                 call    [drv]           ;
                 test    ax,ax
-                jz      @@err
+                jz      @@_xmm_alloc_err
                                         ;now: dx:bx=addr of blk
                 mov     ax,bx
-                jmp     @@ret
-@@err:
+                jmp     @@_xmm_alloc_ret
+@@_xmm_alloc_err:
                 xor     dx,dx
                 xor     ax,ax
-@@ret:
+@@_xmm_alloc_ret:
                 pop     ebx
                 pop     bp
-                ret
-        endp    _xmm_alloc
+                retn
 
-        ends    _TEXT
 
         end
 

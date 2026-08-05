@@ -1,57 +1,49 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
-        group   DGROUP  _TEXT,_DATA
-        assume  cs:DGROUP
+        group   DGROUP  _TEXT _DATA
 
 
-        segment _DATA byte public use16 'DATA'
+        SEGMENT	_DATA	ALIGN=1	public	use16	CLASS=DATA
 
-        global  _saved15:dword
-
-        ends    _DATA
+        extern  _saved15
 
 
-        segment _TEXT byte public use16 'CODE'
+
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
 ;***************************************************************
 ;void int15_88();
 ;***************************************************************
-        global  _int15_88:near
-        proc    _int15_88 near
+        global  near
+        _int15_88:
 
                 cmp     ah,88h
-                je      @@do88
+                je      @@_int15_88_do88
                 jmp     [_saved15]
-@@do88:
+@@_int15_88_do88:
                 pushf
                 call    [_saved15]
                 test    ax,ax
-                jnz     @@ret
+                jnz     @@_int15_88_ret
 
 ;****** Read extended mem size (CMOS bytes 17h,18h (lo,hi))
                 mov     al,18h
                 out     70h,al
-                call    @@iodelay
+                call    @@_int15_88_iodelay
                 in      al,71h
                 mov     ah,al
                 mov     al,17h
-                call    @@iodelay
+                call    @@_int15_88_iodelay
                 out     70h,al
-                call    @@iodelay
+                call    @@_int15_88_iodelay
                 in      al,71h
-@@ret:
+@@_int15_88_ret:
                 iret
-@@iodelay:	retn
-        endp    _int15_88
+@@_int15_88_iodelay:	retn
 
-        ends    _TEXT
 
         end
 

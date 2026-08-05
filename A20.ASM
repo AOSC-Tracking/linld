@@ -1,33 +1,28 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
         group   DGROUP  _TEXT
-        assume  cs:DGROUP,ds:DGROUP
 
-        segment _TEXT byte public use16 'CODE'
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
 ;***************************************************************
 ;void enable_a20_kbd();
 ;***************************************************************
-        global  _enable_a20_kbd:near
-        proc    _enable_a20_kbd near
+        global  near
+        _enable_a20_kbd:
 
                 push    ax
-                call    @@empty_8042
+                call    @@_enable_a20_kbd_empty_8042
                 mov     al,0D1h         ; command write
                 out     64h,al
-                call    @@empty_8042
+                call    @@_enable_a20_kbd_empty_8042
                 mov     al,0DFh         ; A20 on
                 out     60h,al
-                call    @@empty_8042
+                call    @@_enable_a20_kbd_empty_8042
                 pop     ax
-                ret
+                retn
 
 ; This routine checks that the keyboard command queue is empty
 ; (after emptying the output buffers)
@@ -40,36 +35,35 @@
 ; and should also be plenty of time for a real keyboard controller
 ; to empty.
 
-@@empty_8042:
+@@_enable_a20_kbd_empty_8042:
                 push    cx
                 xor     cx,cx           ; 64K iterations
-@@loop:
-                call    @@delay         ; 8042 status port
+@@_enable_a20_kbd_loop:
+                call    @@_enable_a20_kbd_delay         ; 8042 status port
                 in      al,64h          ; output buffer?
                 test    al,1            ;
-                jz      @@no_output
-                call    @@delay         ; yes: read it
+                jz      @@_enable_a20_kbd_no_output
+                call    @@_enable_a20_kbd_delay         ; yes: read it
                 in      al,60h          ;
-                jmp     @@cont          ;
-@@no_output:
+                jmp     @@_enable_a20_kbd_cont          ;
+@@_enable_a20_kbd_no_output:
                 test    al,2            ; is input buffer full?
-                jz      @@break         ; no - break loop
-@@cont:
-                loop    @@loop
-@@break:
+                jz      @@_enable_a20_kbd_break         ; no - break loop
+@@_enable_a20_kbd_cont:
+                loop    @@_enable_a20_kbd_loop
+@@_enable_a20_kbd_break:
                 pop     cx
-                ret
+                retn
 
-@@delay:        out     80h,al
-                ret
-        endp    _enable_a20_kbd
+@@_enable_a20_kbd_delay:        out     80h,al
+                retn
 
 
 ;***************************************************************
 ;void enable_a20_fast();
 ;***************************************************************
-        global  _enable_a20_fast:near
-        proc    _enable_a20_fast near
+        global  near
+        _enable_a20_fast:
 
 ; You must preserve the other bits here. Otherwise embarrasing things
 ; like laptops powering off on boot happen. Corrected version by Kira
@@ -79,30 +73,29 @@
                 or      al,02h  ; "fast A20" version
                 out     92h,al  ; some chips have only this
                 pop     ax
-                ret
-        endp    _enable_a20_fast
+                retn
 
 
 ;***************************************************************
 ;void enable_a20_xmm(u32 drv);
 ;***************************************************************
-        global  _enable_a20_xmm:near
-        proc    _enable_a20_xmm near
+        global  near
+        _enable_a20_xmm:
 
-                arg     drv     :dword  = PARAM_SIZE
+                %arg     drv:dword  = PARAM_SIZE
 
                 push    bp
                 mov     bp,sp
-                push    ax bx
+                push	ax
+                push	bx
                 mov     ah,03h          ;global enable a20
                 call    [drv]           ;
                 mov     ah,05h          ;local enable a20
                 call    [drv]           ;
-                pop     bx ax
-                ret
-        endp    _enable_a20_xmm
+                pop	bx
+                pop	ax
+                retn
 
-        ends    _TEXT
 
         end
 
