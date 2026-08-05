@@ -2,8 +2,8 @@
 //
 // LINLD main() lives here
 
-#include "crtl.h"
-#include "common.h"
+#include "CRTL.H"
+#include "COMMON.H"
 
 static void read_or_die(int fd, void *buf, u16 size, const char* msg=0) {
     u16 cnt = read(fd, buf, size);

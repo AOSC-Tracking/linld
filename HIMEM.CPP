@@ -3,8 +3,8 @@
 // High mem handling routines
 // C++ part of VCPI madness is here
 
-#include "crtl.h"
-#include "common.h"
+#include "CRTL.H"
+#include "COMMON.H"
 
 // Returns physical addr of allocated himem chunk
 // Never fails (will use fallback if not enough mem/no xmm)

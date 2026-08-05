@@ -23,9 +23,9 @@ const u16 _32k = 32*1024u;
 const u32 _64k = 64*1024ul;
 const u32 _1m = 1024ul*1024ul;
 
-const PAGE_BITS = 12;
-const PAGE_SIZE = 1<<PAGE_BITS;
-const PAGE_MASK = PAGE_SIZE-1;
+const unsigned PAGE_BITS = 12;
+const unsigned PAGE_SIZE = 1<<PAGE_BITS;
+const unsigned PAGE_MASK = PAGE_SIZE-1;
 
 // WARNING!
 // BC 3.1 bug: seg() will generate incorrect code if inlined!
