@@ -1,16 +1,11 @@
 ;***************************************************************
 ;****** This file is distributed under GPL
 ;***************************************************************
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
         group   DGROUP  _TEXT
-        assume  cs:DGROUP,ds:DGROUP
 
-        segment _TEXT byte public use16 'CODE'
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
 ;***************************************************************
 ;int _is_rm32();
@@ -19,8 +14,8 @@
 ;******         AX=0 - otherwise
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _is_rm32:near
-        proc    _is_rm32 near
+        global  near
+        _is_rm32:
 
                 pushf
                 cli
@@ -28,7 +23,7 @@
                 push    sp
                 pop     ax
                 cmp     ax,sp
-                jne     @@bad   ;it is a 86/186, not a 286+
+                jne     @@_is_rm32_bad   ;it is a 86/186, not a 286+
 ; Check for vm
                 smsw    ax      ;SMSW cannot be trapped! :-)
                 test    al,1	;MSW_PE
@@ -37,10 +32,11 @@
                 jnz     check_vcpi
 
 ; We're in rm, chk for 386+
-                push    ds dx
-                push    0
+                push	ds
+                push	dx
+                push    WORD 0
                 pop     ds
-                mov     ax,offset excp6
+                mov     ax,excp6
 		mov	dx,cs
                 xchg    [06h*4  ],ax
                 xchg    [06h*4+2],dx
@@ -48,68 +44,69 @@
                 xchg    eax,eax         ;triggers excp6 on 286 - clears ZF
                 mov     [06h*4  ],ax
                 mov     [06h*4+2],dx
-                pop     dx ds
-                jnz     @@bad   ;it's a 286
+                pop	dx
+                pop	ds
+                jnz     @@_is_rm32_bad   ;it's a 286
 
 ; It's a 386 in real mode, chk for paging (crazy but possible)
                 push    eax
                 mov     eax,cr0
                 shl     eax,1   ;CR0_PG to CF
                 pop     eax
-                jc      @@bad   ;CR0_PG was set - real mode paging
-@@386rm:
+                jc      @@_is_rm32_bad   ;CR0_PG was set - real mode paging
+@@_is_rm32_386rm:
                 mov     ax,1
                 popf
-                ret
-@@bad:          xor     ax,ax
+                retn
+@@_is_rm32_bad:          xor     ax,ax
                 popf
-                ret
+                retn
 
 ;***************************************************************
 ;****** Helper int 6 handler: clears ZF, moves IP by 2 bytes
 ;***************************************************************
-label   excp6 near
-@@oldFlags      =       (word bp+6)
-@@oldCS         =       (word bp+4)
-@@oldIP         =       (word bp+2)
-@@oldBP         =       (word bp+0)
-@@Flags_ZF      =       0040h
+excp6:
+%DEFINE	oldFlags	(bp+6)
+%DEFINE	oldCS	(bp+4)
+%DEFINE	oldIP	(bp+2)
+%DEFINE	oldBP	(bp+0)
+Flags_ZF	EQU	0040h
                 push	bp
 		mov	bp,sp
-                add     [@@oldIP],2
-                and     [byte low @@oldFlags],not @@Flags_ZF
+                add     word [oldIP],2
+                and     byte [oldFlags],~Flags_ZF
                 pop     bp
                 iret
 
 ;***************************************************************
 ;****** Helper: checks for vcpi
 ;***************************************************************
-label   check_vcpi near
+check_vcpi:
                 push    dx
                 push    ds
 ; Check whether it is safe to call 67h (we trust only known EMM managers)
-                push    0
+                push    WORD 0
                 pop     ds
-                mov     ds,[word 67h*4+2]
-                cmp     [dword 10+4],'0XXX'
-                jne     @@no_vcpi
-                cmp     [dword 10],'XMME'
-                je      @@skip
+                mov     ds,word [67h*4+2]
+                cmp     dword [10+4],'0XXX'
+                jne     @@_is_rm32_no_vcpi
+                cmp     dword [10],'XMME'
+                je      @@_is_rm32_skip
         ; this also works (as told by <J.S.Peatfield@damtp.cambridge.ac.uk>)
-                cmp     [dword 10],'QMME'
-                jne     @@no_vcpi
-@@skip:
+                cmp     dword [10],'QMME'
+                jne     @@_is_rm32_no_vcpi
+@@_is_rm32_skip:
 ; Check emm manager status and version
                 mov     ah,40h          ; get status
                 int     67h
                 test    ah,ah
-                jnz     @@no_vcpi
+                jnz     @@_is_rm32_no_vcpi
                 mov     ah,46h          ; get version
                 int     67h
                 test    ah,ah
-                jnz     @@no_vcpi
+                jnz     @@_is_rm32_no_vcpi
                 cmp     al,40h          ; version must be >= 4.0
-                jb      @@no_vcpi
+                jb      @@_is_rm32_no_vcpi
 ; Check vcpi manager status
               ;;mov     ax,5A01h        ; ALLOCATE RAW PAGES
               ;;mov     bx,4
@@ -120,22 +117,21 @@ label   check_vcpi near
                 mov     ax,0DE00h       ; check for vcpi present
                 int     67h
                 test    ah,ah
-                jz      @@386vcpi
+                jz      @@_is_rm32_386vcpi
               ;;pop     dx              ;$ handle
               ;;mov     ax,4500h        ; DEALLOCATE PAGES
               ;;int     67h
-@@no_vcpi:
+@@_is_rm32_no_vcpi:
                 xor     ax,ax
-                jmp     @@ret
-@@386vcpi:
+                jmp     @@_is_rm32_ret
+@@_is_rm32_386vcpi:
                 mov     ax,2
-@@ret:
+@@_is_rm32_ret:
                 pop     ds
                 pop     dx
                 popf
-                ret
+                retn
 
-        endp    _is_rm32
 
 
 ;***************************************************************
@@ -143,36 +139,45 @@ label   check_vcpi near
 ;***************************************************************
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _memcpy32:near
-        proc    _memcpy32 near
+        global  near
+        _memcpy32:
 
 ; rm32,imm16 helper
-macro   addzx_e rm,i
+%MACRO	addzx_e	2-*
+%DEFINE	%%rm	%1
+%DEFINE	%%i	%2
         db      66h
-        add     rm,i
+        add     %%rm,%%i
         dw      0
-endm
-                arg     dstseg  :word,  \
-                        dstofs  :dword, \
-                        srcseg  :word,  \
-                        srcofs  :dword, \
-                        sz      :dword  = PARAM_SIZE
+%ENDMACRO
 
-                local   GDTR    :pword, \
-                        oldGDTR :pword  = TEMP_SIZE
+     %push   memcpy32_ctx                 ; save preprocessor context
+     %stacksize flat                      ; 32-bit near call, use EBP
+                %arg    dstseg:word,  \
+                        dstofs:dword, \
+                        srcseg:word,  \
+                        srcofs:dword, \
+                        sz:dword  = PARAM_SIZE
+                %assign %$localsize 0
+                %local   GDTR:word, GDTR_base:dword, oldGDTR:word, oldGDTR_base:dword
 
 ;****** Init ***************************************************
-                enter   TEMP_SIZE,0
+                enter   %$localsize,0
                 pushf
                 cli
-                push    es ds eax ecx esi edi
+                push	es
+                push	ds
+                push	eax
+                push	ecx
+                push	esi
+                push	edi
                 sgdt    [oldGDTR]
 
 ;****** Load gdtr **********************************************
                 mov     eax,cs
                 shl     eax,4
-                addzx_e ax,<offset GDT>
-                mov     [word GDTR],0FFFFh      ;GDT limit
+                addzx_e ax,GDT
+                mov     word [GDTR],0FFFFh      ;GDT limit
                 mov     [dword GDTR+2],eax      ;GDT base
                 lgdt    [GDTR]
 
@@ -186,22 +191,22 @@ endm
                 mov     cx,0008h
                 mov     ds,cx           ;base=0, lim = 4gb
                 mov     es,cx           ;
-                movzx   esi,[srcseg]
+                movzx   esi,word [srcseg]
                 shl     esi,4
-                add     esi,[srcofs]
-                movzx   edi,[dstseg]
+                add     esi,dword [srcofs]
+                movzx   edi,word [dstseg]
                 shl     edi,4
-                add     edi,[dstofs]
-                mov     ecx,[sz]
+                add     edi,dword [dstofs]
+                mov     ecx,dword [sz]
                 cld
                 cmp     esi,edi
-                jae     @@do_copy
+                jae     @@_memcpy32_do_copy
                 add     esi,ecx         ;src<dst: we must do
                 dec     esi             ;  copy backwards to avoid
                 add     edi,ecx         ;  overwrite bug
                 dec     edi             ;
                 std                     ;
-@@do_copy:
+@@_memcpy32_do_copy:
                 db      66h     ;operand width override for ecx
                 db      67h     ;address width override for esi/edi
             rep movsb
@@ -214,25 +219,30 @@ endm
                 jmp     short $+2
 
 ;****** Return *************************************************
-@@ret:          lgdt    [oldGDTR]
-                pop     edi esi ecx eax ds es
+@@_memcpy32_ret:          lgdt    [oldGDTR]
+                pop	edi
+                pop	esi
+                pop	ecx
+                pop	eax
+                pop	ds
+                pop	es
                 popf
                 leave
-                ret
+                retn
+%pop
 
 ;****** Const data *********************************************
-                org     $-8     ;save 8 bytes - they are unused anyway
+align 8
+;                org     $-8     ;save 8 bytes - they are unused anyway
 ;0000: unused
-GDT             dd      ?,?
+GDT             resd	1
 ;0008: Data seg [0,FFFFFFFF]
                 ;       lim_lo              base_lo
                 dw      1111111111111111b,  0000000000000000b
                 db      00000000b,10010010b,10001111b,00000000b
                 ;       base_med  P  S D A  G ??l_hi  base_hi
                 ;                  Pl E W    D
-        endp    _memcpy32
 
-        ends    _TEXT
 
         end
 
