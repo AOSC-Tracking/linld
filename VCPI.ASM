@@ -23,142 +23,161 @@
 ;  switches you from vm86 to plain real mode
 
 
-                ideal
-                %crefref
-                %noincl
-                %nomacs
-                p386
+                CPU	386
 
 ;****** Stuff for declaring descriptors
-struc   descr
-limit           dw    ?
-base0           dw    ?
-base16          db    ?
-type            db    ?
-limit16         db    ?
-base24          db    ?
-ends    descr
-macro   descriptor name,typ,plevel,present,limit,gran,base
-      ;;name    descr <limit and 0ffffh,base and 0ffffh,low (base shr 16),typ or plevel or present,(limit shr 16) or gran,high (base shr 16)>
-        name    descr <limit and 0ffffh,base           ,0                ,typ or plevel or present,(limit shr 16) or gran,0                 >
-endm
+struc	descr
+.limit:	resw	1
+.base0:	resw	1
+.base16:	resb	1
+.type:	resb	1
+.limit16:	resb	1
+.base24:	resb	1
+endstruc	;    descr
+%MACRO  descriptor      7
+%1:
+  istruc descr
+    at .limit,   dw (%5 & 0ffffh)
+    at .base0,   dw %7
+    at .base16,  db 0
+    at .type,    db (%2 | %3 | %4)
+    at .limit16, db ((%5 >> 16) | %6)
+    at .base24,  db 0
+  iend
+%ENDMACRO
 ; decriptor types (bit0..4 of descr.type )
-tss386_avail    = 09h
-data_seg        = 00010000b   ; data segment
-  expand_down   = 00000100b   ; =1 limit counts down from base
-  writable      = 00000010b   ; =1 if write access allowed to data segment
-code_seg        = 00011000b   ; code segment
-  conforming    = 00000100b   ; =1 code can be accesses and executed at any PL
-  readable      = 00000010b   ; =1 if code also can be read (cannot be ovwritten)
+tss386_avail	EQU	09h
+data_seg	EQU	00010000b   ; data segment
+  expand_down	EQU	00000100b   ; =1 limit counts down from base
+  writable	EQU	00000010b   ; =1 if write access allowed to data segment
+code_seg	EQU	00011000b   ; code segment
+  conforming	EQU	00000100b   ; =1 code can be accesses and executed at any PL
+  readable	EQU	00000010b   ; =1 if code also can be read (cannot be ovwritten)
 ; privilege levels (bit5..6 of descr.type )
-priv0           = 00000000b
-priv1           = 00100000b
-priv2           = 01000000b
-priv3           = 01100000b
+priv0	EQU	00000000b
+priv1	EQU	00100000b
+priv2	EQU	01000000b
+priv3	EQU	01100000b
 ; segment present bit (bit7 of descr.type )
-is_present      = 10000000b
-not_present     = 00000000b
+is_present	EQU	10000000b
+not_present	EQU	00000000b
 ;definition of granularity ( bits6..7 in descr.limit16 )
-gran_byte       = 00000000b
-gran_page       = 10000000b  ; 4k granularity
-use_16          = 00000000b
-use_32          = 01000000b
+gran_byte	EQU	00000000b
+gran_page	EQU	10000000b  ; 4k granularity
+use_16	EQU	00000000b
+use_32	EQU	01000000b
 
 ;****** rm32,imm16 helpers
-macro   movzx_e rm,i
+%MACRO	movzx_e	2
+%DEFINE	%%rm	%1
+%DEFINE	%%i	%2
         db      66h
-        mov     rm,i
+        mov     %%rm,%%i
         dw      0
-endm
-macro   addzx_e rm,i
+%ENDMACRO
+%MACRO	addzx_e	2
+%DEFINE	%%rm	%1
+%DEFINE	%%i	%2
         db      66h
-        add     rm,i
+        add     %%rm,%%i
         dw      0
-endm
+%ENDMACRO
 
 
-        group   DGROUP  _TEXT,_DATA
-        assume  cs:DGROUP,ds:DGROUP
+        group   DGROUP  _TEXT _DATA
 
-        segment _DATA byte public use16 'DATA'
+        SEGMENT	_DATA	ALIGN=1	public	use16	CLASS=DATA
 
 tss             dd      0,0     ;enough, we'll never use it anyway
 
-label   gdt     byte
-gdt_null        descr   <?>     ;0000
-gdt_vcpi        descr   <?>     ;0008
-gdt_vcpi2       descr   <?>     ;0010
-gdt_vcpi3       descr   <?>     ;0018
+gdt:
+gdt_null:     ;0000
+istruc	descr
+	dw	?
+iend
+gdt_vcpi:     ;0008
+istruc	descr
+	dw	?
+iend
+gdt_vcpi2:     ;0010
+istruc	descr
+	dw	?
+iend
+gdt_vcpi3:     ;0018
+istruc	descr
+	dw	?
+iend
 descriptor      gdt_abs ,(data_seg+writable),priv0,is_present,0fffffh,(gran_page+use_32),0
 ;Note: code/data segs must be flagged use16 (i.e. use ip/sp, not eip/esp)
 ;Note: base addrs will be fixed up in prepare_vcpi()
 descriptor      gdt_code,(code_seg+readable),priv0,is_present,0fffffh,(gran_page+use_16),0
 descriptor      gdt_data,(data_seg+writable),priv0,is_present,0fffffh,(gran_page+use_16),0
-descriptor      gdt_tss ,tss386_avail       ,priv0,is_present,0ffh   ,gran_byte         ,<offset tss>
-SEL_VCPI        = (gdt_vcpi - gdt_null)
-SEL_TSS         = (gdt_tss  - gdt_null)
-SEL_ABS         = (gdt_abs  - gdt_null)
-SEL_CODE        = (gdt_code - gdt_null)
-SEL_DATA        = (gdt_data - gdt_null)
+descriptor      gdt_tss ,tss386_avail       ,priv0,is_present,0ffh   ,gran_byte         ,tss
+%DEFINE	SEL_VCPI	(gdt_vcpi - gdt_null)
+%DEFINE	SEL_TSS	(gdt_tss  - gdt_null)
+%DEFINE	SEL_ABS	(gdt_abs  - gdt_null)
+%DEFINE	SEL_CODE	(gdt_code - gdt_null)
+%DEFINE	SEL_DATA	(gdt_data - gdt_null)
 
-label   gdtr    pword
+gdtr:
 gdt_lim         dw      0ffffh
-gdt_base        dw      offset gdt,0
-label   idtr    pword
+gdt_base        dw      gdt,0
+idtr:
 idt_lim         dw      03ffh   ;we won't enable ints,
 idt_base        dd      0       ;  so let's leave it the same as for rm
 
 ;Note: layout dictated by vcpi api, don't rearrange!
-label sw2pm_params byte
+sw2pm_params:
 ;Note: base addrs will be fixed up in prepare_vcpi()
-sw2pm_cr3       dd      ?
-sw2pm_gdtr_ptr  dw      offset gdtr,0
-sw2pm_idtr_ptr  dw      offset idtr,0
+sw2pm_cr3       resd	1
+sw2pm_gdtr_ptr  dw      gdtr,0
+sw2pm_idtr_ptr  dw      idtr,0
 sw2pm_ldtr      dw      0       ;we don't need it
 sw2pm_tr        dw      SEL_TSS ;vcpi thinks we need it... can't set to 0
-sw2pm_jumpaddr  dd      ?
+sw2pm_jumpaddr  resd	1
                 dw      SEL_CODE
 
 ;Pagedir/page0 addrs: linear, seg:0 and cs:ofs
-pagedir_laddr   dd      ?
-page0_laddr     dd      ?
+pagedir_laddr   resd	1
+page0_laddr     resd	1
 ;;pagedir_seg     dw      ?
 ;;page0_seg       dw      ?
-pagedir_ofs     dw      ?
-page0_ofs       dw      ?
+pagedir_ofs     resw	1
+page0_ofs       resw	1
 
-vcpi_pm_entry   dd      ?
+vcpi_pm_entry   resd	1
                 dw      SEL_VCPI
 
-label   saved_ss_sp dword
-saved_sp        dw      ?
-saved_ss        dw      ?
+saved_ss_sp:
+saved_sp        resw	1
+saved_ss        resw	1
 
 
-        ends    _DATA
 
 
-        segment _TEXT byte public use16 'CODE'
+        SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
 ;***************************************************************
 ;char* prepare_vcpi(void *pagebuf);
 ;****** Return: AX=>first unused byte in pagebuf
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _prepare_vcpi:near
-        proc    _prepare_vcpi near
+        global  near
+        _prepare_vcpi:
 
-                arg     pgbuf   :word   = PARAM_SIZE
+                %arg    pgbuf:word   = PARAM_SIZE
 
                 push    bp
                 mov     bp,sp
-                push    es eax ebx
+                push	es
+                push	eax
+                push	ebx
 
                 mov     ebx,cs
                 shl     ebx,4           ;ebx = linear addr of CS
 
 ;Calculate pagedir/page0 addrs, initialize cr3 and pagedir[0]
-                movzx   eax,[pgbuf]
+                movzx   eax,DWORD [pgbuf]
                 add     eax,ebx
                 add     eax,0FFFh
                 and     ax,0F000h   ;eax = 4k aligned linear addr of pagebuf
@@ -193,16 +212,17 @@ saved_ss        dw      ?
                 add     [dword gdt_base],ebx
                 add     [dword sw2pm_gdtr_ptr],ebx
                 add     [dword sw2pm_idtr_ptr],ebx
-                add     [dword gdt_code.base0],ebx
-                add     [dword gdt_data.base0],ebx
-                add     [dword gdt_tss.base0],ebx
+                add     [dword gdt_code + descr.base0],ebx ; [dword gdt_code.base0]
+                add     [dword gdt_data + descr.base0],ebx ; [dword gdt_data.base0]
+                add     [dword gdt_tss  + descr.base0],ebx ; [dword gdt_tss.base0]
 ; Return
-                pop     ebx eax es
+                pop	ebx
+                pop	eax
+                pop	es
                 mov     ax,[pagedir_ofs]
                 add     ax,4
                 pop     bp
-                ret
-        endp    _prepare_vcpi
+                retn
 
 
 ;***************************************************************
@@ -211,13 +231,15 @@ saved_ss        dw      ?
 ;******         AX=0 - otherwise (it's bad)
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _get_vcpi_interface:near
-        proc    _get_vcpi_interface near
+        global  near
+        _get_vcpi_interface:
 
-                push    ebx si di
+                push	ebx
+                push	si
+                push	di
 
 ; Get and save VCPI pm interface
-                mov     si,offset gdt_vcpi      ;DS:DI => 3 GDT entries for VCPI
+                mov     si,gdt_vcpi      ;DS:DI => 3 GDT entries for VCPI
                 mov     di,[page0_ofs]          ;ES:DI => page0
                 mov     ax,0DE01h               ;get vcpi pm interface
                 int     67h
@@ -227,24 +249,25 @@ saved_ss        dw      ?
                 mov     si,[page0_ofs]
                 xor     bx,bx
                 cld
-@@map_chk:
+@@_get_vcpi_interface_map_chk:
                 lodsd
                 shr     eax,12
                 cmp     ax,bx
-                jne     @@bad
+                jne     @@_get_vcpi_interface_bad
                 inc     bx
-                cmp     ax,((640*1024) shr 12)-1
-                jne     @@map_chk
+                cmp     ax,((640*1024) >> 12)-1
+                jne     @@_get_vcpi_interface_map_chk
 ; Return
-@@ok:
+@@_get_vcpi_interface_ok:
                 mov     ax,1
-                jmp     @@ret
-@@bad:
+                jmp     @@_get_vcpi_interface_ret
+@@_get_vcpi_interface_bad:
                 xor     ax,ax
-@@ret:
-                pop     di si ebx
-                ret
-        endp    _get_vcpi_interface
+@@_get_vcpi_interface_ret:
+                pop	di
+                pop	si
+                pop	ebx
+                retn
 
 
 ;***************************************************************
@@ -253,12 +276,12 @@ saved_ss        dw      ?
 ;****** Copies PAGE_SIZE bytes
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _memcpy_vcpi:near
-        proc    _memcpy_vcpi near
+        global  near
+        _memcpy_vcpi:
 
-              arg     dstofs  :dword, \
-                      srcseg  :word,  \
-                      srcofs  :word   = PARAM_SIZE
+              %arg    dstofs:dword, \
+                      srcseg:word,  \
+                      srcofs:word   = PARAM_SIZE
 
                 push    bp
                 mov     bp,sp
@@ -266,56 +289,62 @@ saved_ss        dw      ?
 ; Note: bp points to std stack frame now. bp will be passed to
 ; pm routine. This allows params to be passed on stack
                 pushad
-                push    offset do_memcpy_vcpi
+                push    do_memcpy_vcpi
                 call    call_pm_routine ; Call pm copy routine via vcpi pm
                 pop     ax
                 popad
 
                 pop     bp
-                ret
+                retn
 
-struc   pm_regs
-$$retaddr       dw      ?
-$$f             dw      ?
-$$edi           dd      ?
-$$esi           dd      ?
-$$ebp           dd      ?
-$$esp           dd      ?
-$$ebx           dd      ?
-$$edx           dd      ?
-$$ecx           dd      ?
-$$eax           dd      ?
-ends
+struc	pm_regs
+.$$retaddr:	resw	1
+.$$f:	resw	1
+.$$edi:	resd	1
+.$$esi:	resd	1
+.$$ebp:	resd	1
+.$$esp:	resd	1
+.$$ebx:	resd	1
+.$$edx:	resd	1
+.$$ecx:	resd	1
+.$$eax:	resd	1
+endstruc
 
 ;***************************************************************
 ;****** Helper: goes into 16bit pm and calls routine (addr on stk)
 ;***************************************************************
-label call_pm_routine near
+call_pm_routine:
                 mov     bp,sp           ; ss:bp => struct pm_regs
 
                 xor     ax,ax           ; IRET stack for return to vm
-                push    ax gs           ;   (9 dwords)
-                push    ax fs           ;
-                push    ax ds           ;
-                push    ax es           ;
-                push    ax ss           ;
+                push	ax           ;   (9 dwords)
+                push	gs
+                push	ax           ;
+                push	fs
+                push	ax           ;
+                push	ds
+                push	ax           ;
+                push	es
+                push	ax           ;
+                push	ss
                 push    ebp             ; esp
                 pushfd                  ; eflags: IF saved here
-                push    ax cs           ;
+                push	ax           ;
+                push	cs
                 push    ax              ;\eip
-                push    offset @@vm_ret ;/
+                push    @@_memcpy_vcpi_vm_ret ;/
 
                 cli
               ;;mov     [saved_xx],xx   ;use if your vcpi trashes bp/etc
 
-                movzx_e <[word sw2pm_jumpaddr]>,<offset @@pm_entry>
+                movzx_e word [sw2pm_jumpaddr],@@_memcpy_vcpi_pm_entry
                ;mov     [word sw2pm_jumpaddr+4],SEL_CODE
                 mov     esi,cs
                 shl     esi,4
-                addzx_e si,<offset sw2pm_params>
+                addzx_e si,sw2pm_params
                 mov     ax,0DE0Ch       ; vcpi: switch to pm
                 int     67h
-@@pm_entry:
+@@_memcpy_vcpi_pm_entry:
 ; Now we are in 16-bit protected mode
                 mov     ax,SEL_DATA
                 mov     ss,ax
@@ -323,15 +352,13 @@ label call_pm_routine near
               ;;mov     es,ax
               ;;mov     fs,ax
               ;;mov     gs,ax
-                assume  nothing
-                assume  cs:DGROUP
 
               ;;mov     xx,[saved_xx]   ;use if your vcpi trashes bp/etc
                 lea     sp,[bp-9*4]     ;else we can do this trick with bp
 
 ; Call the routine (bp points to params on stack if any)
-                mov     ax,[(pm_regs bp).$$f]   ; ss:bp => struct pm_regs
-                mov     bp,[word (pm_regs bp).$$ebp]    ;ss:bp => params
+                mov     ax,[bp + pm_regs.$$f]   ; ss:bp => struct pm_regs
+                mov     bp,word [bp + pm_regs.$$ebp]    ;ss:bp => params
                 call    ax
 
 ; Ok, let's return to vm
@@ -340,23 +367,21 @@ label call_pm_routine near
                 push    SEL_ABS         ; vcpi wants ds=all_addrspace
                 pop     ds              ;
                 mov     ax,0DE0Ch       ; maybe we need whole eax?
-                call    [pword cs:vcpi_pm_entry]
-@@vm_ret:
+                call far [cs:vcpi_pm_entry]
+@@_memcpy_vcpi_vm_ret:
 ; Now we are in vm86 mode. Sregs, esp, eflags (IF) restored from IRET stack
-                ret
+                retn
 
 ;***************************************************************
 ;****** Helper: This is where real copy is done
 ;***************************************************************
-label   do_memcpy_vcpi near
+do_memcpy_vcpi:
 
 ; Note: ss:bp => params
 ; Move data
                 mov     cx,SEL_ABS
                 mov     ds,cx
                 mov     es,cx
-                assume  nothing
-                assume  cs:DGROUP
 
         ; Set up target addr:
         ; replace page mapping for page at 0 so
@@ -371,9 +396,9 @@ label   do_memcpy_vcpi near
                 xor     edi,edi         ;es:edi => remapped page
 
         ; Set up source addr
-                movzx   esi,[srcseg]
+                movzx   esi,WORD [srcseg]
                 shl     esi,4
-                movzx   ecx,[srcofs]
+                movzx   ecx,WORD [srcofs]
                 add     esi,ecx
 
         ; Do copying
@@ -398,10 +423,8 @@ label   do_memcpy_vcpi near
                 mov     ecx,cr3         ; reload TLB cache
                 mov     cr3,ecx         ;
 ; Return
-@@ret:          ret
+@@_memcpy_vcpi_ret:          retn
 
-        endp    _memcpy_vcpi
-                assume  cs:DGROUP,ds:DGROUP
 
 
 ;***************************************************************
@@ -409,8 +432,8 @@ label   do_memcpy_vcpi near
 ;***************************************************************
 ;****** Uses:   Flags
 ;***************************************************************
-        global  _vm2rm:near
-        proc    _vm2rm near
+        global  near
+        _vm2rm:
 
               ;;pushf
               ;;cli
@@ -420,15 +443,15 @@ label   do_memcpy_vcpi near
                 mov     [saved_ss],ss
                 mov     [saved_sp],sp
 
-                movzx_e <[word sw2pm_jumpaddr]>,<offset @@pm_entry>
+                movzx_e word [sw2pm_jumpaddr],@@_vm2rm_pm_entry
                ;mov     [word sw2pm_jumpaddr+4],SEL_CODE
                 mov     esi,cs
                 shl     esi,4
-                addzx_e si,<offset sw2pm_params>
+                addzx_e si,sw2pm_params
                 mov     ax,0DE0Ch       ; vcpi: switch to pm
                 int     67h
 ; Now we are in 16-bit protected mode
-@@pm_entry:
+@@_vm2rm_pm_entry:
                 mov     ax,SEL_DATA     ; load data sregs with limit >=64k
                 mov     ds,ax           ;   or you may get limit violations
                 mov     ss,ax           ;   later in rm
@@ -448,15 +471,13 @@ label   do_memcpy_vcpi near
                 lss     sp,[saved_ss_sp]; SS
                 pop     ds              ; DS
                ;push    cs      ;* done earlier
-                push    offset @@next
+                push    @@_vm2rm_next
                 retf                    ; CS
-@@next:
+@@_vm2rm_next:
               ;;popad
               ;;popf
-                ret             ; We don't care much about rest (ES/FS/GS)
-        endp    _vm2rm
+                retn             ; We don't care much about rest (ES/FS/GS)
 
-        ends    _TEXT
 
         end
 
