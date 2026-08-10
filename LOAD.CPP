@@ -318,7 +318,7 @@ int main() {
             puts("CPU in vm");
 #endif
             vcpi=1;
-            heap_top = prepare_vcpi(malloc_or_die(8*1024+4));
+            heap_top = (u8*)prepare_vcpi(malloc_or_die(8*1024+4));
             get_vcpi_interface() || die("VCPI: low 640k: need 1:1 mapping");
             break;
     }
@@ -382,7 +382,7 @@ int main() {
 
     // Open kernel, read first kb, check it
 
-    rm_buf = malloc_or_die(_32k, "Can't allocate rm buf");
+    rm_buf = (u8*)malloc_or_die(_32k, "Can't allocate rm buf");
     // Do not use malloc below until heap_top adjustment (see <*>)
     int fd = open(kernel_name, O_RDONLY|O_BINARY);
     if(fd == -1) die("Can't open kernel file");
@@ -432,7 +432,7 @@ int main() {
     // in unallocated memory as a last resort
 
     u16 xfer_size = _16k;
-    u8* xfer_buf = malloc_or_die(xfer_size, "Can't allocate xfer buf");
+    u8* xfer_buf = (u8*)malloc_or_die(xfer_size, "Can't allocate xfer buf");
     pm_size = image_size-rm_size;
   //// assume 2:1 decompression ratio
   //if(_1m+pm_size*2 > memtop()) {
@@ -474,8 +474,8 @@ int main() {
     // Shrink stack: we won't need much of it now and have no malloc() plans
     // BTW: bc31 don't have any clue what is 'common subexpression elimination'
     // (bad idea, can trash cmdline: _SP=0x100;)
-    if(_SP>u16(heap_top)+0x100) _SP=u16(heap_top)+0x100;
-    if( u16(_CS)+(u16(_SP)>>4) >= 0x9000 ) {
+    if(GetSP() > u16(heap_top)+0x100) SetSP(u16(heap_top)+0x100);
+    if( u16(GetCS())+(u16(GetSP())>>4) >= 0x9000 ) {
         // Oops! We can stomp on our toes... better stop now
         die("Loaded too close to 9000:0");
     }

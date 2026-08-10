@@ -31,9 +31,34 @@ const unsigned PAGE_MASK = PAGE_SIZE-1;
 // BC 3.1 bug: seg() will generate incorrect code if inlined!
 // replaced by _dirty_ hack for now
 // u16 seg(const void far* p) { return FP_SEG(p); }
+#ifdef __WATCOMC__
+inline u16 seg(const void far* p) { return (unsigned)p; }
+#else
 inline u16 seg(const void far*) { return _DS; }
+#endif
 
-inline u16 ofs(const void* p) { return FP_OFF(p); }
+#ifdef __WATCOMC__
+u16 GetSP();
+#pragma aux GetSP = value[sp] modify[];
+#else
+u16 GetSP() { return _SP; }
+#endif
+
+#ifdef __WATCOMC__
+void SetSP(u16 new_sp);
+#pragma aux SetSP = "mov sp, ax" modify[] parm[ax];
+#else
+inline void SetSP(u16 new_sp) { _SP = new_sp; }
+#endif
+
+#ifdef __WATCOMC__
+u16 GetCS(void);
+#pragma aux GetCS = "mov ax, cs" value[ax] modify[ax];
+#else
+inline u16 GetCS(void) { return _CS; }
+#endif
+
+inline u16 ofs(const void far* p) { return FP_OFF(p); }
 
 // External asm helpers
 enum { BAD, R386, VCPI };

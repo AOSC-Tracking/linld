@@ -3,6 +3,7 @@
 // Bare bones of C runtime library
 
 #include "CRTL.H"
+#include "COMMON.H"
 
 int strlen(const char* s) {
     if(!s) return 0;
@@ -29,14 +30,14 @@ void puts(const char* s) {
     write(1,crlf,2);
 }
 
-char* heap_top = &bss_end;
+unsigned char* heap_top = &bss_end;
 
 // Note: you can free/resize last allocated block(s)
 // by altering heap_top. Be careful though...
 // Note: we zero out allocated block like calloc()
 void* malloc(unsigned sz) {
-    if(unsigned(_SP) < unsigned(heap_top)
-    || unsigned(_SP)-unsigned(heap_top) < sz+MIN_STACK
+    if(unsigned(GetSP()) < unsigned(heap_top)
+    || unsigned(GetSP())-unsigned(heap_top) < sz+MIN_STACK
     || sz>MAX_MALLOC    // guards against overflows
     ) {
         puts("malloc() failure");
@@ -131,6 +132,53 @@ unsigned long strtoul(const char *s, char ** /*endptr*/, int radix) {
     return v;
 }
 
+#ifdef __WATCOMC__
+extern void exit(int n);
+#pragma aux exit = \
+  "mov ah,0x4c" \
+  "int 0x21" \
+  modify [ah] parm [al];
+
+int open(const char* name, int flags);
+#pragma aux open = \
+  "mov ah,0x3d" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [al] [dx] value [ax];
+
+int read(int fd, void* data, int sz);
+#pragma aux read = \
+  "mov ah,0x3f" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx] [cx] value [ax];
+int write(int fd, const void* data, int sz);
+#pragma aux write = \
+  "xor ax,ax" \
+  "jcxz ok" \
+  "mov ah,0x40" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx] [cx] value [ax];
+
+long lseek(int fd, long sz, int dir);
+#pragma aux lseek = \
+  "mov ah,0x42" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "mov dx,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx cx] [al] value [dx ax];
+
+#else
+
 void exit(int n) {
     asm {
         mov     al,byte ptr n
@@ -197,3 +245,4 @@ long lseek(int fd, long sz, int dir) {
 ok:
     return long(MK_FP(_DX,_AX));
 }
+#endif

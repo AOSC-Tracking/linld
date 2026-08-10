@@ -2,9 +2,15 @@
 //
 // Bare bones of C runtime library
 
+#define asm _asm
+
+#ifdef __WATCOMC__
+#include <i86.h>
+#else
 #define MK_FP(seg,ofs) ((void _seg *)(seg) + (void near *)(ofs))
 #define FP_SEG(fp)     ((unsigned) (void _seg*) (void far*)(fp))
 #define FP_OFF(fp)     ((unsigned) (fp))
+#endif
 
 const unsigned MIN_STACK = 0x400;
 const unsigned MAX_MALLOC = 0xF000;
@@ -19,7 +25,7 @@ const int SEEK_END = 2;
 extern char text_start; extern char text_end;
 extern char data_start; extern char data_end;
 extern char bss_start;  extern char bss_end;
-extern char* heap_top;
+extern unsigned char* heap_top;
 extern int _argc;
 //extern const char* _argv[];
 extern const char** _argv;
