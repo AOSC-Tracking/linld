@@ -205,8 +205,10 @@ struct first1k_t {
                             // int 0x15 fn 0xe820
 }; //__attribute((packed));
 
+#ifdef __BORLANDC__
 #if sizeof(first1k_t)!=0x400
 #error BUG: Bad first1k
+#endif
 #endif
 
 const u32 HdrS = 'H' + ('d'<<8) + (u32('r')<<16) + (u32('S')<<24);
@@ -240,7 +242,7 @@ u32 saved15;
 "do88: pushf" \
     "call [saved15]" \
     "test ax,ax" \
-    "jnz ret" \
+    "jnz ret_" \
     "mov al,0x18" \
     "out 0x70,al" \
     "call iodelay" \
@@ -251,7 +253,7 @@ u32 saved15;
     "out 0x70,al" \
     "call iodelay" \
     "in al,0x71" \
-"ret: iret" \
+"ret_: iret" \
 "iodelay: retn" \
     modify [ax ah] parm [];
 #endif

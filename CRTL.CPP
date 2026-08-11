@@ -30,7 +30,7 @@ void puts(const char* s) {
     write(1,crlf,2);
 }
 
-unsigned char* heap_top = &bss_end;
+unsigned char* heap_top = (unsigned char*)&bss_end;
 
 // Note: you can free/resize last allocated block(s)
 // by altering heap_top. Be careful though...
@@ -103,7 +103,7 @@ void parse_cmdline() {
     }
 brk:
     // done by malloc: _argv[_argc]=0;
-    heap_top = (char*)(_argv+_argc+1);
+    heap_top = (unsigned char*)(_argv+_argc+1);
 }
 
 unsigned long strtoul(const char *s, char ** /*endptr*/, int radix) {
