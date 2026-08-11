@@ -62,23 +62,23 @@ inline u16 ofs(const void far* p) { return FP_OFF(p); }
 
 // External asm helpers
 enum { BAD, R386, VCPI };
-extern "C" int is_rm32();
-extern "C" void memcpy32(u16,u32, u16,u32, u32);
+extern "C" int __cdecl is_rm32();
+extern "C" void __cdecl memcpy32(u16,u32, u16,u32, u32);
 extern "C" void set_sregs_jump_seg_ofs(u16 sr, u16 sp, u16 seg, u16 ofs);
 extern u32 xmm_driver;
-extern "C" u32 get_xmm_driver();
-extern "C" u32 xmm_alloc(u32 drv, u32 size);
-extern "C" u32 memtop_e801();
-extern "C" u32 memtop_88();
-extern "C" u32 memtop_cmos();
-extern "C" void enable_a20_fast();
-extern "C" void enable_a20_kbd();
-extern "C" void enable_a20_xmm(u32 drv);
-extern "C" int get_vcpi_interface();
-extern "C" char* prepare_vcpi(void *pagebuf);
+extern "C" u32 __cdecl get_xmm_driver();
+extern "C" u32 __cdecl xmm_alloc(u32 drv, u32 size);
+extern "C" u32 __cdecl memtop_e801();
+extern "C" u32 __cdecl memtop_88();
+extern "C" u32 __cdecl memtop_cmos();
+extern "C" void __cdecl enable_a20_fast();
+extern "C" void __cdecl enable_a20_kbd();
+extern "C" void __cdecl enable_a20_xmm(u32 drv);
+extern "C" int __cdecl get_vcpi_interface();
+extern "C" char* __cdecl prepare_vcpi(void *pagebuf);
 //extern "C" int call_pm_routine(void* f);
-extern "C" void memcpy_vcpi(u32 dstofs,u16 srcseg,u16 srcofs);
-extern "C" void vm2rm();
+extern "C" void __cdecl memcpy_vcpi(u32 dstofs,u16 srcseg,u16 srcofs);
+extern "C" void __cdecl vm2rm();
 extern "C" void int15_88();
 
 // C++ helpers

@@ -5,6 +5,21 @@
 #include "CRTL.H"
 #include "COMMON.H"
 
+#ifdef __WATCOMC__
+#pragma aux set_sregs_jump_seg_ofs = \
+  "mov bp,sp" \
+  "mov sp,bx" \
+  "mov ds,ax" \
+  "mov es,ax" \
+  "mov ss,ax" \
+  "mov fs,ax" \
+  "mov gs,ax" \
+  "push dx" \
+  "push cx" \
+  "retf" \
+  modify [bp cx] parm [ax] [bx] [cx] [dx];
+#endif
+
 static void read_or_die(int fd, void *buf, u16 size, const char* msg=0) {
     u16 cnt = read(fd, buf, size);
     if(cnt != size) die(msg);
@@ -216,6 +231,30 @@ u32* initrd_bufv=0;
 char vcpi=0;
 u32 xmm_driver=0;
 u32 saved15;
+
+#ifdef __WATCOMC__
+#pragma aux int15_88 = \
+    "cmp ah,0x88" \
+    "je do88" \
+    "jmp [saved15]" \
+"do88: pushf" \
+    "call [saved15]" \
+    "test ax,ax" \
+    "jnz ret" \
+    "mov al,0x18" \
+    "out 0x70,al" \
+    "call iodelay" \
+    "in al,0x71" \
+    "mov ah,al" \
+    "mov al,0x17" \
+    "call iodelay" \
+    "out 0x70,al" \
+    "call iodelay" \
+    "in al,0x71" \
+"ret: iret" \
+"iodelay: retn" \
+    modify [ax ah] parm [];
+#endif
 
 // Called from inside kernel just before rm->pm
 // _loadds _saveregs: done by hand
