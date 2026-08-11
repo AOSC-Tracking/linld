@@ -162,7 +162,7 @@ saved_ss        resw	1
 ;****** Return: AX=>first unused byte in pagebuf
 ;****** Uses:   Flags
 ;***************************************************************
-        global  near
+        global  _prepare_vcpi
         _prepare_vcpi:
 
                 %arg    pgbuf:word   = PARAM_SIZE
@@ -177,7 +177,7 @@ saved_ss        resw	1
                 shl     ebx,4           ;ebx = linear addr of CS
 
 ;Calculate pagedir/page0 addrs, initialize cr3 and pagedir[0]
-                movzx   eax,DWORD [pgbuf]
+                movzx   eax,[WORD pgbuf]
                 add     eax,ebx
                 add     eax,0FFFh
                 and     ax,0F000h   ;eax = 4k aligned linear addr of pagebuf
@@ -231,7 +231,7 @@ saved_ss        resw	1
 ;******         AX=0 - otherwise (it's bad)
 ;****** Uses:   Flags
 ;***************************************************************
-        global  near
+        global  _get_vcpi_interface
         _get_vcpi_interface:
 
                 push	ebx
@@ -276,7 +276,7 @@ saved_ss        resw	1
 ;****** Copies PAGE_SIZE bytes
 ;****** Uses:   Flags
 ;***************************************************************
-        global  near
+        global  _memcpy_vcpi
         _memcpy_vcpi:
 
               %arg    dstofs:dword, \
@@ -432,7 +432,7 @@ do_memcpy_vcpi:
 ;***************************************************************
 ;****** Uses:   Flags
 ;***************************************************************
-        global  near
+        global  _vm2rm
         _vm2rm:
 
               ;;pushf

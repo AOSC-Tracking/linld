@@ -132,53 +132,7 @@ unsigned long strtoul(const char *s, char ** /*endptr*/, int radix) {
     return v;
 }
 
-#ifdef __WATCOMC__
-extern void exit(int n);
-#pragma aux exit = \
-  "mov ah,0x4c" \
-  "int 0x21" \
-  modify [ah] parm [al];
-
-int open(const char* name, int flags);
-#pragma aux open = \
-  "mov ah,0x3d" \
-  "int 0x21" \
-  "jnc ok" \
-  "sbb ax,ax" \
-  "ok: " \
-  modify [ax ah] parm [al] [dx] value [ax];
-
-int read(int fd, void* data, int sz);
-#pragma aux read = \
-  "mov ah,0x3f" \
-  "int 0x21" \
-  "jnc ok" \
-  "sbb ax,ax" \
-  "ok: " \
-  modify [ax ah] parm [bx] [dx] [cx] value [ax];
-int write(int fd, const void* data, int sz);
-#pragma aux write = \
-  "xor ax,ax" \
-  "jcxz ok" \
-  "mov ah,0x40" \
-  "int 0x21" \
-  "jnc ok" \
-  "sbb ax,ax" \
-  "ok: " \
-  modify [ax ah] parm [bx] [dx] [cx] value [ax];
-
-long lseek(int fd, long sz, int dir);
-#pragma aux lseek = \
-  "mov ah,0x42" \
-  "int 0x21" \
-  "jnc ok" \
-  "sbb ax,ax" \
-  "mov dx,ax" \
-  "ok: " \
-  modify [ax ah] parm [bx] [dx cx] [al] value [dx ax];
-
-#else
-
+#ifdef __BORLANDC__
 void exit(int n) {
     asm {
         mov     al,byte ptr n

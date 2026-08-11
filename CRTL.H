@@ -42,6 +42,48 @@ void* malloc(unsigned sz);
 void puts(const char* s);
 unsigned long strtoul(const char *s, char **endptr=0, int radix=0);
 
+#ifdef __WATCOMC__
+#pragma aux exit = \
+  "mov ah,0x4c" \
+  "int 0x21" \
+  modify [ah] parm [al];
+
+#pragma aux open = \
+  "mov ah,0x3d" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [al] [dx] value [ax];
+
+#pragma aux read = \
+  "mov ah,0x3f" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx] [cx] value [ax];
+
+#pragma aux write = \
+  "xor ax,ax" \
+  "jcxz ok" \
+  "mov ah,0x40" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx] [cx] value [ax];
+
+#pragma aux lseek = \
+  "mov ah,0x42" \
+  "int 0x21" \
+  "jnc ok" \
+  "sbb ax,ax" \
+  "mov dx,ax" \
+  "ok: " \
+  modify [ax ah] parm [bx] [dx cx] [al] value [dx ax];
+#endif
+
 inline int strcmp(const char* a,const char* b) {
     return strncmp(a,b,unsigned(~1)-1);
 }

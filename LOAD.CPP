@@ -235,7 +235,7 @@ u32 xmm_driver=0;
 u32 saved15;
 
 #ifdef __WATCOMC__
-#pragma aux int15_88 = \
+#pragma aux _do_int15_88 = \
     "cmp ah,0x88" \
     "je do88" \
     "jmp [saved15]" \
@@ -256,6 +256,8 @@ u32 saved15;
 "ret_: iret" \
 "iodelay: retn" \
     modify [ax ah] parm [];
+
+extern "C" void int15_88() { return _do_int15_88(); }
 #endif
 
 // Called from inside kernel just before rm->pm

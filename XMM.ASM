@@ -11,7 +11,7 @@
 ;Get xmm driver addr or 0 if no xmm
 ;u32 get_xmm_driver()
 ;***************************************************************
-        global  near
+        global  _get_xmm_driver
         _get_xmm_driver:
 
                 push	es
@@ -38,7 +38,7 @@
 ;***************************************************************
 ;u32 xmm_alloc(void* drv, u32 size)
 ;***************************************************************
-        global  near
+        global  _xmm_alloc
         _xmm_alloc:
                 %arg    drv:dword, \
                         sz:dword = PARAM_SIZE

@@ -10,7 +10,7 @@
 ;***************************************************************
 ;void enable_a20_kbd();
 ;***************************************************************
-        global  near
+        global  _enable_a20_kbd
         _enable_a20_kbd:
 
                 push    ax
@@ -62,7 +62,7 @@
 ;***************************************************************
 ;void enable_a20_fast();
 ;***************************************************************
-        global  near
+        global  _enable_a20_fast
         _enable_a20_fast:
 
 ; You must preserve the other bits here. Otherwise embarrasing things
@@ -79,7 +79,7 @@
 ;***************************************************************
 ;void enable_a20_xmm(u32 drv);
 ;***************************************************************
-        global  near
+        global  _enable_a20_xmm
         _enable_a20_xmm:
 
                 %arg     drv:dword  = PARAM_SIZE
