@@ -24,7 +24,7 @@ const int SEEK_END = 2;
 
 extern char text_start; extern char text_end;
 extern char data_start; extern char data_end;
-extern char bss_start;  extern char bss_end;
+extern char bss_start;  extern "C" char bss_end;
 extern unsigned char* heap_top;
 extern int _argc;
 //extern const char* _argv[];
