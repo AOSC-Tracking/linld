@@ -5,6 +5,27 @@
 #include "CRTL.H"
 #include "COMMON.H"
 
+#if __WATCOMC__
+unsigned long __U4M_impl(unsigned long a, unsigned long b);
+#pragma aux __U4M_impl = \
+  "xchg ax,bx" \
+  "push ax" \
+  "xchg ax,dx" \
+  "or ax,ax" \
+  "je L1" \
+  "mul dx" \
+"L1: xchg ax,cx" \
+  "or ax,ax" \
+  "je L2" \
+  "mul bx" \
+  "add cx,ax" \
+"L2: pop ax" \
+  "mul bx" \
+  "add dx,cx" \
+  parm [dx ax] [cx bx] value [dx ax] modify [ax bx cx dx];
+extern "C" unsigned long __cdecl _U4M(unsigned long a, unsigned long b) { return __U4M_impl(a,b); }
+#endif
+
 int strlen(const char* s) {
     if(!s) return 0;
     const char* p=s;
@@ -124,7 +145,11 @@ unsigned long strtoul(const char *s, char ** /*endptr*/, int radix) {
         while( isalnum(n=toupper(*s)) ) {
             n -= '0'; if(n>9) n = n+'0'-'A'+10;
             if(n >= radix) break;
+#ifdef __WATCOMC__
+            v = __U4M_impl(v, radix) + n;
+#else
             v = v*radix + n;
+#endif
             s++;
         }
         //not used yet: if(endptr) *endptr=s;

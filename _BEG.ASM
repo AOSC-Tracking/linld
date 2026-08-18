@@ -8,11 +8,11 @@
         SEGMENT	_TEXT	ALIGN=1	public	use16	CLASS=CODE
 
                 RESB     100h
-        global  byte
+        global  _cstart_
         ..start:
-        _text_start:
-                EXTERN   _main
-                call    NEAR _main
+        _cstart_:
+                EXTERN   main_
+                call    NEAR main_
                 mov     ah,4ch
                 int     21h
 

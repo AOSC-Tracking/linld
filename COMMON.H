@@ -32,7 +32,7 @@ const unsigned PAGE_MASK = PAGE_SIZE-1;
 // replaced by _dirty_ hack for now
 // u16 seg(const void far* p) { return FP_SEG(p); }
 #ifdef __WATCOMC__
-inline u16 seg(const void far* p) { return (unsigned)p; }
+inline u16 seg(const void far* p) { return FP_SEG(p); }
 #else
 inline u16 seg(const void far*) { return _DS; }
 #endif

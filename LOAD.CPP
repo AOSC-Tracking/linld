@@ -6,6 +6,8 @@
 #include "COMMON.H"
 
 #ifdef __WATCOMC__
+extern "C" void ___wcpp_4_data_init_fs_root(void) {}
+
 #pragma aux set_sregs_jump_seg_ofs = \
   "mov bp,sp" \
   "mov sp,bx" \

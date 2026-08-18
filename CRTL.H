@@ -54,7 +54,7 @@ unsigned long strtoul(const char *s, char **endptr=0, int radix=0);
   "jnc ok" \
   "sbb ax,ax" \
   "ok: " \
-  modify [ax ah] parm [al] [dx] value [ax];
+  modify [ax ah] parm [dx] [al] value [ax];
 
 #pragma aux read = \
   "mov ah,0x3f" \

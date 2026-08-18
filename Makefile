@@ -1,9 +1,9 @@
 CXX := wpp
-CXXLD := wcl
-CXXFLAGS := -3 -j -ox -oh
+LD := wlink
+CXXFLAGS := -3 -j -ox -oh -zl -ms -bt=dos
 
-LINLD.COM: _END.obj A20.obj XMM.obj VCPI.obj MEMCPY32.obj MEMTOP.obj CRTL.obj LOAD.obj HIMEM.obj
-	$(CXXLD) $(CXXFLAGS) -fe=$@ $^
+LINLD.COM: _BEG.obj A20.obj XMM.obj VCPI.obj MEMCPY32.obj MEMTOP.obj CRTL.obj LOAD.obj HIMEM.obj _END.obj
+	$(LD) system dos com $(addprefix file ,$^) name $@
 
 %.obj: %.ASM
 	nasm -f obj -t $^ -l $(patsubst %.ASM,%.lst,$^)
